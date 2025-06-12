@@ -3,9 +3,10 @@ import { Rectangle } from './Rectangle.js';
 import { Circle } from './Circle.js';
 import { Polygon } from './Polygon.js';
 import { Triangle } from './Triangle.js';
+import { Textures } from './Textures.js';
 
 export class Game {
-    constructor() {
+    constructor(options = {}) {
         // Initialize Matter.js modules
         this.Engine = Matter.Engine;
         this.Render = Matter.Render;
@@ -32,6 +33,11 @@ export class Game {
         // Array to store all game objects
         this.gameObjects = [];
 
+        // Texture system
+        this.textures = new Textures();
+        this._onloadCallback = null;
+        this._resourcesLoaded = false;
+
         // Start the engine and renderer
         this.Runner.run(this.runner, this.engine);
         this.Render.run(this.render);
@@ -42,6 +48,39 @@ export class Game {
         // Add update loop
         this.Engine.run(this.engine);
         Matter.Events.on(this.engine, 'beforeUpdate', () => this.update());
+
+        // If textures are provided, load them
+        if (options.textures) {
+            this.textures.load(options.textures).then(() => {
+                this._resourcesLoaded = true;
+                if (this._onloadCallback) this._onloadCallback();
+            });
+        } else {
+            this._resourcesLoaded = true;
+        }
+    }
+
+    // Load a texture
+    loadTexture(name, url) {
+        return new Promise((resolve, reject) => {
+            if (this.textures.has(name)) {
+                resolve(this.textures.get(name));
+                return;
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                this.textures.set(name, url);
+                resolve(url);
+            };
+            img.onerror = reject;
+            img.src = url;
+        });
+    }
+
+    // Get a loaded texture
+    getTexture(name) {
+        return this.textures.get(name);
     }
 
     // Create a new rectangle
@@ -154,5 +193,58 @@ export class Game {
     
     radiansToDegrees(radians) {
         return radians * (180 / Math.PI);
+    }
+
+    /**
+     * Preload multiple textures at once.
+     * @param {Object} textures - { name: url, ... }
+     * @returns {Promise}
+     */
+    preloadTextures(textures) {
+        const promises = Object.entries(textures).map(([name, url]) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    this.textures.set(name, img);
+                    resolve();
+                };
+                img.onerror = reject;
+                img.src = url;
+            });
+        });
+        return Promise.all(promises);
+    }
+
+    /**
+     * Set a texture on a game object with automatic scaling.
+     * @param {GameObject} gameObject
+     * @param {string} url - The image URL
+     */
+    setTexture(gameObject, url) {
+        if (!url) return;
+        const img = new window.Image();
+        img.onload = () => {
+            const diameter = gameObject.radius * 2;
+            const xScale = diameter / img.width;
+            const yScale = diameter / img.height;
+            if (!gameObject.body.render) gameObject.body.render = {};
+            gameObject.body.render.sprite = {
+                texture: url,
+                xScale,
+                yScale
+            };
+        };
+        img.src = url;
+    }
+
+    /**
+     * Register a callback to be called when the engine and resources are ready.
+     * @param {Function} callback
+     */
+    onload(callback) {
+        this._onloadCallback = callback;
+        if (this._resourcesLoaded && typeof callback === 'function') {
+            callback();
+        }
     }
 } 

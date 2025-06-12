@@ -11,6 +11,8 @@ export class GameObject {
         this.mass = options.mass || 1;
         this.maxSpeed = options.maxSpeed || Infinity;
         this.maxForce = options.maxForce || Infinity;
+        this.angle = options.angle || 0;
+        this.texture = options.texture || null;
     }
 
     update() {
@@ -20,6 +22,7 @@ export class GameObject {
             this.position.y = this.body.position.y;
             this.velocity.x = this.body.velocity.x;
             this.velocity.y = this.body.velocity.y;
+            this.angle = this.body.angle;
 
             // Apply acceleration to velocity
             this.velocity = this.velocity.add(this.acceleration);
@@ -51,6 +54,13 @@ export class GameObject {
         this.velocity.y = y;
         if (this.body) {
             Matter.Body.setVelocity(this.body, { x, y });
+        }
+    }
+
+    setAngle(angle) {
+        this.angle = angle;
+        if (this.body) {
+            Matter.Body.setAngle(this.body, angle);
         }
     }
 
@@ -102,6 +112,17 @@ export class GameObject {
         
         // Apply the force
         this.applyForce(steer);
+    }
+
+    setTexture(texture) {
+        this.texture = texture;
+        if (this.body) {
+            this.body.render.sprite = {
+                texture: texture,
+                xScale: 1,
+                yScale: 1
+            };
+        }
     }
 
     destroy() {
