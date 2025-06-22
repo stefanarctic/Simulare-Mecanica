@@ -7,5 +7,10 @@ export class Rectangle extends GameObject {
         this.height = height;
         this.body = game.Bodies.rectangle(position.x, position.y, width, height, options);
         game.Composite.add(game.engine.world, this.body);
+
+        // Set up sprite if provided
+        if (options.spriteName) {
+            this.setSprite(options.spriteName, options.spriteOptions);
+        }
     }
 } 

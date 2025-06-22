@@ -5,9 +5,16 @@ const texturesObj = {
     basketball: 'res/images/basketball2.png'
 };
 
+console.log('Starting game initialization...');
+
 const game = new Game({ textures: texturesObj });
 
 game.onload(() => {
+    console.log('Game loaded successfully!');
+    console.log('All textures loaded:', game.textures.getLoadedTextures());
+    console.log('Basketball texture available:', game.hasTexture('basketball'));
+    console.log('Basketball URL:', game.getTextureUrl('basketball'));
+    
     // Create boxes and ground
     const ground = game.createRectangle(window.innerWidth / 2, window.innerHeight - 30, window.innerWidth, 60, { 
         isStatic: true,
@@ -24,24 +31,26 @@ game.onload(() => {
         }
     });
 
-    // TODO load all images passed in the constructor of the game object, then when it loads and all other engine resources are loaded, call the onload callback
-    // Load the basketball image, then create the circle with correct scaling
-    const img = new Image();
-    img.onload = function() {
-        const radius = 30;
-        const diameter = radius * 2;
-        const xScale = diameter / img.width;
-        const yScale = diameter / img.height;
-        const circle = game.createCircle(window.innerWidth / 3, 200, radius, {
-            render: {
-                sprite: {
-                    texture: texturesObj.basketball,
-                    xScale,
-                    yScale
-                },
-                fillStyle: '#ff9800' // fallback color
-            }
-        });
-    };
-    img.src = texturesObj.basketball;
+    // All images are now loaded and cached! 
+    // We can create the circle with the basketball sprite directly from cache
+    const circle = game.createCircle(window.innerWidth / 3, 200, 30, {
+        spriteName: 'basketball', // Use the cached texture name
+        spriteOptions: {
+            autoScale: true // Automatically scale to fit the circle
+        },
+        render: {
+            fillStyle: '#ff9800' // fallback color
+        }
+    });
+
+    console.log('Circle created with sprite:', circle.getSprite());
+    console.log('Circle has sprite:', circle.hasSprite());
+
+    // Alternative way to set sprite after creation
+    // const circle2 = game.createCircle(window.innerWidth / 2, 100, 25, {
+    //     render: {
+    //         fillStyle: '#ff9800'
+    //     }
+    // });
+    // circle2.setSprite('basketball', { autoScale: true });
 });

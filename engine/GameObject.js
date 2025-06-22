@@ -13,6 +13,7 @@ export class GameObject {
         this.maxForce = options.maxForce || Infinity;
         this.angle = options.angle || 0;
         this.texture = options.texture || null;
+        this.spriteName = options.spriteName || null;
     }
 
     update() {
@@ -114,6 +115,10 @@ export class GameObject {
         this.applyForce(steer);
     }
 
+    /**
+     * Set a texture using a URL (legacy method)
+     * @param {string} texture - The texture URL
+     */
     setTexture(texture) {
         this.texture = texture;
         if (this.body) {
@@ -123,6 +128,64 @@ export class GameObject {
                 yScale: 1
             };
         }
+    }
+
+    /**
+     * Set a sprite using a texture name from cache
+     * @param {string} spriteName - The texture name from cache
+     * @param {Object} options - Sprite options
+     */
+    setSprite(spriteName, options = {}) {
+        this.spriteName = spriteName;
+        if (this.body && this.game.textures.has(spriteName)) {
+            const image = this.game.textures.get(spriteName);
+            const url = this.game.textures.getUrl(spriteName);
+            
+            if (!image || !url) {
+                console.warn(`Texture '${spriteName}' not found in cache`);
+                return;
+            }
+            
+            let xScale = options.xScale || 1;
+            let yScale = options.yScale || 1;
+
+            // Auto-scale if not provided
+            if (options.autoScale !== false) {
+                if (this.radius) {
+                    // Circle - scale to fit diameter
+                    const diameter = this.radius * 2;
+                    xScale = diameter / image.width;
+                    yScale = diameter / image.height;
+                } else if (this.width && this.height) {
+                    // Rectangle - scale to fit dimensions
+                    xScale = this.width / image.width;
+                    yScale = this.height / image.height;
+                }
+            }
+
+            if (!this.body.render) this.body.render = {};
+            this.body.render.sprite = {
+                texture: url, // Use URL for Matter.js
+                xScale,
+                yScale
+            };
+        }
+    }
+
+    /**
+     * Get the current sprite name
+     * @returns {string|null}
+     */
+    getSprite() {
+        return this.spriteName;
+    }
+
+    /**
+     * Check if this object has a sprite
+     * @returns {boolean}
+     */
+    hasSprite() {
+        return this.spriteName !== null && this.game.textures.has(this.spriteName);
     }
 
     destroy() {

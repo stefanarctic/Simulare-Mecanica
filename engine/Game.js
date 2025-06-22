@@ -37,6 +37,7 @@ export class Game {
         this.textures = new Textures();
         this._onloadCallback = null;
         this._resourcesLoaded = false;
+        this._loadingPromise = null;
 
         // Start the engine and renderer
         this.Runner.run(this.runner, this.engine);
@@ -51,7 +52,12 @@ export class Game {
 
         // If textures are provided, load them
         if (options.textures) {
-            this.textures.load(options.textures).then(() => {
+            this._loadingPromise = this.textures.load(options.textures);
+            this._loadingPromise.then(() => {
+                this._resourcesLoaded = true;
+                if (this._onloadCallback) this._onloadCallback();
+            }).catch((error) => {
+                console.error('Failed to load textures:', error);
                 this._resourcesLoaded = true;
                 if (this._onloadCallback) this._onloadCallback();
             });
@@ -62,25 +68,22 @@ export class Game {
 
     // Load a texture
     loadTexture(name, url) {
-        return new Promise((resolve, reject) => {
-            if (this.textures.has(name)) {
-                resolve(this.textures.get(name));
-                return;
-            }
-
-            const img = new Image();
-            img.onload = () => {
-                this.textures.set(name, url);
-                resolve(url);
-            };
-            img.onerror = reject;
-            img.src = url;
-        });
+        return this.textures.loadSingle(name, url);
     }
 
     // Get a loaded texture
     getTexture(name) {
         return this.textures.get(name);
+    }
+
+    // Get a texture URL
+    getTextureUrl(name) {
+        return this.textures.getUrl(name);
+    }
+
+    // Check if a texture is loaded
+    hasTexture(name) {
+        return this.textures.has(name);
     }
 
     // Create a new rectangle
@@ -201,18 +204,68 @@ export class Game {
      * @returns {Promise}
      */
     preloadTextures(textures) {
-        const promises = Object.entries(textures).map(([name, url]) => {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => {
-                    this.textures.set(name, img);
-                    resolve();
-                };
-                img.onerror = reject;
-                img.src = url;
-            });
-        });
-        return Promise.all(promises);
+        return this.textures.load(textures);
+    }
+
+    /**
+     * Set a sprite on a game object using a texture name from cache.
+     * @param {GameObject} gameObject
+     * @param {string} textureName - The texture name from cache
+     * @param {Object} options - Sprite options like xScale, yScale
+     */
+    setSprite(gameObject, textureName, options = {}) {
+        const image = this.textures.get(textureName);
+        const url = this.textures.getUrl(textureName);
+        
+        if (!image || !url) {
+            console.warn(`Texture '${textureName}' not found in cache`);
+            return;
+        }
+
+        const spriteOptions = {
+            texture: url, // Use URL for Matter.js
+            xScale: options.xScale || 1,
+            yScale: options.yScale || 1
+        };
+
+        if (!gameObject.body.render) gameObject.body.render = {};
+        gameObject.body.render.sprite = spriteOptions;
+    }
+
+    /**
+     * Set a sprite on a game object with automatic scaling based on object size.
+     * @param {GameObject} gameObject
+     * @param {string} textureName - The texture name from cache
+     * @param {Object} options - Additional options
+     */
+    setSpriteWithAutoScale(gameObject, textureName, options = {}) {
+        const image = this.textures.get(textureName);
+        const url = this.textures.getUrl(textureName);
+        
+        if (!image || !url) {
+            console.warn(`Texture '${textureName}' not found in cache`);
+            return;
+        }
+
+        let xScale = 1, yScale = 1;
+
+        // Auto-scale based on object type
+        if (gameObject.radius) {
+            // Circle - scale to fit diameter
+            const diameter = gameObject.radius * 2;
+            xScale = diameter / image.width;
+            yScale = diameter / image.height;
+        } else if (gameObject.width && gameObject.height) {
+            // Rectangle - scale to fit dimensions
+            xScale = gameObject.width / image.width;
+            yScale = gameObject.height / image.height;
+        }
+
+        // Apply custom scaling if provided
+        if (options.xScale !== undefined) xScale = options.xScale;
+        if (options.yScale !== undefined) yScale = options.yScale;
+
+        this.setSprite(gameObject, textureName, { xScale, yScale });
     }
 
     /**
@@ -246,5 +299,16 @@ export class Game {
         if (this._resourcesLoaded && typeof callback === 'function') {
             callback();
         }
+    }
+
+    /**
+     * Wait for all resources to be loaded
+     * @returns {Promise}
+     */
+    waitForResources() {
+        if (this._resourcesLoaded) {
+            return Promise.resolve();
+        }
+        return this._loadingPromise || Promise.resolve();
     }
 } 

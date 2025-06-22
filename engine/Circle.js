@@ -6,5 +6,10 @@ export class Circle extends GameObject {
         this.radius = radius;
         this.body = game.Bodies.circle(position.x, position.y, radius, options);
         game.Composite.add(game.engine.world, this.body);
+
+        // Set up sprite if provided
+        if (options.spriteName) {
+            this.setSprite(options.spriteName, options.spriteOptions);
+        }
     }
 } 
