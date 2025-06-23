@@ -3,7 +3,7 @@ import { Rectangle } from './Rectangle.js';
 import { Circle } from './Circle.js';
 import { Polygon } from './Polygon.js';
 import { Triangle } from './Triangle.js';
-import { Textures } from './Textures.js';
+import { TextureManager } from './TextureManager.js';
 
 export class Game {
     constructor(options = {}) {
@@ -34,7 +34,7 @@ export class Game {
         this.gameObjects = [];
 
         // Texture system
-        this.textures = new Textures();
+        this.textures = new TextureManager();
         this._onloadCallback = null;
         this._resourcesLoaded = false;
 

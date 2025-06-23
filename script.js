@@ -25,6 +25,8 @@ game.onload(() => {
     });
 
     // TODO load all images passed in the constructor of the game object, then when it loads and all other engine resources are loaded, call the onload callback
+    // TODO texture handling
+    
     // Load the basketball image, then create the circle with correct scaling
     const img = new Image();
     img.onload = function() {
