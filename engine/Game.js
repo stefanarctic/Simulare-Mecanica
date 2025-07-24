@@ -247,4 +247,17 @@ export class Game {
             callback();
         }
     }
+
+    /**
+     * Get all loaded textures as an object { name: HTMLImageElement, ... }
+     * @returns {Object}
+     */
+    getLoadedTextures() {
+        // Convert the TextureManager's Map to a plain object
+        const textures = {};
+        for (const [name, img] of this.textures.images.entries()) {
+            textures[name] = img;
+        }
+        return textures;
+    }
 } 

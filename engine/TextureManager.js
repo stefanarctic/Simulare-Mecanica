@@ -50,4 +50,40 @@ export class TextureManager {
     set(name, image) {
         this.images.set(name, image);
     }
+
+    /**
+     * Get scale factors to fit a texture to a given width and height
+     * @param {string} name - The texture name
+     * @param {number} width - Target width
+     * @param {number} height - Target height
+     * @returns {{xScale: number, yScale: number}|null}
+     */
+    getScale(name, width, height) {
+        const img = this.get(name);
+        if (!img) return null;
+        return {
+            xScale: width / img.width,
+            yScale: height / img.height
+        };
+    }
+
+    /**
+     * Create a tiled texture as a data URL, repeating the image to fill the given width and height
+     * @param {string} name - The texture name (must be loaded)
+     * @param {number} width - Output width
+     * @param {number} height - Output height
+     * @returns {string|null} - Data URL of the tiled texture, or null if not found
+     */
+    createTiledTexture(name, width, height) {
+        const img = this.get(name);
+        if (!img) return null;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        const pattern = ctx.createPattern(img, 'repeat');
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, width, height);
+        return canvas.toDataURL();
+    }
 } 
