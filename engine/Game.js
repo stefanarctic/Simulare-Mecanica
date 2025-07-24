@@ -14,6 +14,9 @@ export class Game {
         this.Bodies = Matter.Bodies;
         this.Composite = Matter.Composite;
         this.Body = Matter.Body;
+        // Add Mouse and MouseConstraint for drag-and-drop
+        this.Mouse = Matter.Mouse;
+        this.MouseConstraint = Matter.MouseConstraint;
 
         // Create engine and renderer
         this.engine = this.Engine.create();
@@ -26,6 +29,20 @@ export class Game {
                 wireframes: false,
             }
         });
+
+        // Add mouse control for drag-and-drop
+        this.mouse = this.Mouse.create(this.render.canvas);
+        this.mouseConstraint = this.MouseConstraint.create(this.engine, {
+            mouse: this.mouse,
+            constraint: {
+                stiffness: 0.2,
+                render: {
+                    visible: false
+                }
+            }
+        });
+        Matter.Composite.add(this.engine.world, this.mouseConstraint);
+        this.render.mouse = this.mouse;
 
         // Create runner
         this.runner = this.Runner.create();
